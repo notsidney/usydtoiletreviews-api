@@ -4,8 +4,9 @@ import pytz
 
 # Open posts.json and read all post IDs
 
-# May need to update this every 2 months
-access_token = 'EAAZAyMuW9R5MBAFIII40NWFYKMpz4KyNdDOZBzZAnaEjgiHqbotTKffZCrzMZBAZAJKZBe7zUXvLW2G6Sc4BEGEue2tfglEuN6JEx14Dd0L14NoHZAMb5x8pSLIiSjl4ATugFRY0AA6RpFI6Wlwg3JKdUfyHHTpifHkmSCKhECBOjFDjOK26MD4YCY0lFwoqmS4ZD'
+
+with open('access_token.txt', 'r') as token_file:
+    access_token = token_file.readline().strip()
 req = requests.get('https://graph.facebook.com/v3.0/221844801737554?fields=posts.limit(100){created_time,message,permalink_url,type,id}&access_token=' + access_token)
 
 # Get JSON

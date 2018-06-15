@@ -1,0 +1,11 @@
+EAAZAyMuW9R5MBAMojFaTCJxkSZAcXjgnrZCDD2NRHSaJUnu0ZAiMXLkNUOpbOzaRUR9rXq3wL977qIC59ZAcdaqPP3HwBBt5MqLGlvoSNFaAOZChq7fZBOldoaaUS2SlNEpXTdklZBs0U6sPOQMf7aoaPzsr5ZAzL5PFhUWEXbEzgWwZDZD
+
+Never-expiring access token:
+https://medium.com/@Jenananthan/how-to-create-non-expiry-facebook-page-token-6505c642d0b1
+
+To get a new long-lived access token:
+1. Go to https://developers.facebook.com/tools/explorer/1814412788582291
+2. Get a page access token
+3. Click on i > Open in Access Tool
+4. Click Extend Access token
+5. Copy access token to first line of this file
