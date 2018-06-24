@@ -1,9 +1,7 @@
 import requests
 import datetime
 import pytz
-
-# Open posts.json and read all post IDs
-
+import json
 
 with open('access_token.txt', 'r') as token_file:
     access_token = token_file.readline().strip()
@@ -27,7 +25,6 @@ for post in data['posts']['data']:
     # Initialise all dict items as empty strings
     post_data = {
         'id': post['id'],
-        'url': post['permalink_url'],
         'timestamp': '',
         'building': '',
         'level': '',
@@ -76,4 +73,9 @@ for post in data['posts']['data']:
 
     out.append(post_data)
 
-print(out)
+with open('posts.json', 'w') as posts_file:
+    posts_file.write('{\n    "posts": [\n')
+    for post in out:
+        posts_file.write(' ' * 8 + json.dumps(post) + ',\n')
+    current_time = datetime.datetime.utcnow().isoformat()
+    posts_file.write('    ],\n    "updated": "' + current_time + '"\n}')
