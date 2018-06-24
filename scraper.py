@@ -3,79 +3,91 @@ import datetime
 import pytz
 import json
 
-with open('access_token.txt', 'r') as token_file:
-    access_token = token_file.readline().strip()
-req = requests.get('https://graph.facebook.com/v3.0/221844801737554?fields=posts.limit(100){created_time,message,permalink_url,type,id}&access_token=' + access_token)
+def scraper(environ, start_response):
 
-# Get JSON
-data = req.json()
+    with open('access_token.txt', 'r') as token_file:
+        access_token = token_file.readline().strip()
+    req = requests.get('https://graph.facebook.com/v3.0/221844801737554?fields=posts.limit(100){created_time,message,permalink_url,type,id}&access_token=' + access_token)
 
-out = []
+    # Get JSON
+    data = req.json()
 
-for post in data['posts']['data']:
-    # Ignore non-photo posts since they're not reviews
-    if post['type'] != 'photo':
-        continue
-    # Check if post is a review by looking for '/10' in 'message'
-    if 'message' not in post:
-        continue
-    if '/10' not in post['message']:
-        continue
+    out = []
 
-    # Initialise all dict items as empty strings
-    post_data = {
-        'id': post['id'],
-        'timestamp': '',
-        'building': '',
-        'level': '',
-        'type': '',
-        'notes': '',
-        'rating': ''
-    }
+    for post in data['posts']['data']:
+        # Ignore non-photo posts since they're not reviews
+        if post['type'] != 'photo':
+            continue
+        # Check if post is a review by looking for '/10' in 'message'
+        if 'message' not in post:
+            continue
+        if '/10' not in post['message']:
+            continue
 
-    # Get UTC timestamp
-    utc_time = datetime.datetime.strptime(\
-        post['created_time'], '%Y-%m-%dT%H:%M:%S%z')
-    # And convert to Sydney time
-    syd_time = utc_time.astimezone(pytz.timezone('Australia/Sydney'))
-    # Write to output dict
-    post_data['timestamp'] = syd_time.strftime('%Y-%m-%d %H:%M')
+        # Initialise all dict items as empty strings
+        post_data = {
+            'id': post['id'],
+            'timestamp': '',
+            'building': '',
+            'level': '',
+            'type': '',
+            'notes': '',
+            'rating': ''
+        }
 
-    # Read data from 'message'
-    split_msg = post['message'].split('\n')
-    meta_line = split_msg[0]
-    post_data['rating'] = split_msg[-1].split('/10')[0]
+        # Get UTC timestamp
+        utc_time = datetime.datetime.strptime(\
+            post['created_time'], '%Y-%m-%dT%H:%M:%S%z')
+        # And convert to Sydney time
+        syd_time = utc_time.astimezone(pytz.timezone('Australia/Sydney'))
+        # Write to output dict
+        post_data['timestamp'] = syd_time.strftime('%Y-%m-%d %H:%M')
 
-    # Check if meta_line has any notes, denoted by [] or ()
-    if '[' in meta_line:
-        start = meta_line.find('[')
-        end = meta_line.find(']')
-        post_data['notes'] = meta_line[start : end + 1]
-        meta_line = meta_line.replace(post_data['notes'], '').strip()
-    if '(' in meta_line:
-        start = meta_line.find('(')
-        end = meta_line.find(')')
-        post_data['notes'] = meta_line[start : end + 1]
-        meta_line = meta_line.replace(post_data['notes'], '').strip()
+        # Read data from 'message'
+        split_msg = post['message'].split('\n')
+        meta_line = split_msg[0]
+        post_data['rating'] = split_msg[-1].split('/10')[0]
 
-    meta_line = meta_line.split(',')
+        # Check if meta_line has any notes, denoted by [] or ()
+        if '[' in meta_line:
+            start = meta_line.find('[')
+            end = meta_line.find(']')
+            post_data['notes'] = meta_line[start : end + 1]
+            meta_line = meta_line.replace(post_data['notes'], '').strip()
+        if '(' in meta_line:
+            start = meta_line.find('(')
+            end = meta_line.find(')')
+            post_data['notes'] = meta_line[start : end + 1]
+            meta_line = meta_line.replace(post_data['notes'], '').strip()
 
-    post_data['building'] = meta_line[0]
+        meta_line = meta_line.split(',')
 
-    # Loops through rest of meta_items
-    for meta_item in meta_line[1:]:
-        if 'Toilet' in meta_item.title():
-            post_data['type'] = meta_item.title()\
-                .replace('Toilets', '').replace('Toilet', '')\
-                .strip()
-        else:
-            post_data['level'] = meta_item.replace('Level', '').strip()
+        post_data['building'] = meta_line[0]
 
-    out.append(post_data)
+        # Loops through rest of meta_items
+        for meta_item in meta_line[1:]:
+            if 'Toilet' in meta_item.title():
+                post_data['type'] = meta_item.title()\
+                    .replace('Toilets', '').replace('Toilet', '')\
+                    .strip()
+            else:
+                post_data['level'] = meta_item.replace('Level', '').strip()
 
-with open('posts.json', 'w') as posts_file:
-    posts_file.write('{\n    "posts": [\n')
+        out.append(post_data)
+
+    data_list = []
+    data_list.append('{\n    "posts": [\n')
     for post in out:
-        posts_file.write(' ' * 8 + json.dumps(post) + ',\n')
+        data_list.append(' ' * 8 + json.dumps(post) + ',\n')
     current_time = datetime.datetime.utcnow().isoformat()
-    posts_file.write('    ],\n    "updated": "' + current_time + '"\n}')
+    data_list.append('    ],\n    "updated": "' + current_time + '"\n}')
+
+    data = ''.join(data_list).encode('utf_8')
+    print(data)
+    
+    response_headers = [
+        ('Content-type', 'text/plain'),
+        ('Content-Length', str(len(data)))
+    ]
+    start_response('200 OK', response_headers)
+    return [data]
