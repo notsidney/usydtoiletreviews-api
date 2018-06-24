@@ -5,6 +5,8 @@ import json
 
 def scraper(environ, start_response):
 
+    start_time = datetime.datetime.utcnow()
+
     with open('access_token.txt', 'r') as token_file:
         access_token = token_file.readline().strip()
     req = requests.get('https://graph.facebook.com/v3.0/221844801737554?fields=posts.limit(100){created_time,message,permalink_url,type,id}&access_token=' + access_token)
@@ -12,7 +14,11 @@ def scraper(environ, start_response):
     # Get JSON
     data = req.json()
 
-    out = []
+    # Get page ID
+    page_id = data['posts']['data'][0]['id'].split('_')[0]
+
+    # Store posts in this list
+    posts = []
 
     for post in data['posts']['data']:
         # Ignore non-photo posts since they're not reviews
@@ -26,7 +32,7 @@ def scraper(environ, start_response):
 
         # Initialise all dict items as empty strings
         post_data = {
-            'id': post['id'],
+            'id': post['id'].replace(page_id, '').replace('_', ''),
             'timestamp': '',
             'building': '',
             'level': '',
@@ -73,20 +79,23 @@ def scraper(environ, start_response):
             else:
                 post_data['level'] = meta_item.replace('Level', '').strip()
 
-        out.append(post_data)
+        posts.append(post_data)
 
     data_list = []
     data_list.append('{\n    "posts": [\n')
-    for post in out:
+    for post in posts:
         data_list.append(' ' * 8 + json.dumps(post) + ',\n')
-    current_time = datetime.datetime.utcnow().isoformat()
-    data_list.append('    ],\n    "updated": "' + current_time + '"\n}')
+    current_time = datetime.datetime.utcnow()
+    runtime = current_time - start_time
+    current_time_iso = current_time.isoformat()
+    data_list.append('    ],\n    "page_id": "' + page_id + \
+        '",\n    "updated": "' + current_time_iso + \
+        '",\n    "runtime": "' + str(runtime) + '"\n}')
 
     data = ''.join(data_list).encode('utf_8')
-    print(data)
     
     response_headers = [
-        ('Content-type', 'text/plain'),
+        ('Content-Type', 'application/json; charset=UTF-8'),
         ('Content-Length', str(len(data)))
     ]
     start_response('200 OK', response_headers)
