@@ -2,6 +2,7 @@ import requests
 import datetime
 import pytz
 import json
+import hashlib
 
 def get_json(url, output_list):
     req = requests.get(url)
@@ -111,7 +112,9 @@ def scraper(environ, start_response):
     
     response_headers = [
         ('Content-Type', 'application/json; charset=UTF-8'),
-        ('Content-Length', str(len(json_bstr)))
+        ('Content-Length', str(len(json_bstr))),
+        ('Cache-Control', 'public, max-age:86400'),
+        ('ETag', hashlib.md5(str(posts).encode('utf_8')).hexdigest())
     ]
     start_response('200 OK', response_headers)
 
