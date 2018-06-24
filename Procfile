@@ -1,1 +1,1 @@
-web: gunicorn -c gunicorn_config.py scraper:scraper
+web: gunicorn scraper:scraper
