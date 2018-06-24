@@ -3,24 +3,39 @@ import datetime
 import pytz
 import json
 
-def scraper(environ, start_response):
+def get_json(url, output_list):
+    req = requests.get(url)
+    data = req.json()
+    # Add all posts to out list
+    output_list.extend(data['data'])
+    # Check if there's a next page - if True, call recursively
+    if 'next' in data['paging']:
+        return get_json(data['paging']['next'], output_list)
+    return True
 
+def scraper(environ, start_response):
+    # Store start time
     start_time = datetime.datetime.utcnow()
 
+    # Get access token
     with open('access_token.txt', 'r') as token_file:
         access_token = token_file.readline().strip()
-    req = requests.get('https://graph.facebook.com/v3.0/221844801737554?fields=posts.limit(100){created_time,message,permalink_url,type,id}&access_token=' + access_token)
-
-    # Get JSON
-    data = req.json()
+    # Store raw post data here
+    data = []
+    # Request
+    get_json(
+        'https://graph.facebook.com/v3.0/221844801737554/posts?limit=100&fields=created_time,message,type,id&access_token=' + access_token,
+        data
+    )
 
     # Get page ID
-    page_id = data['posts']['data'][0]['id'].split('_')[0]
+    page_id = data[0]['id'].split('_')[0]
 
     # Store posts in this list
     posts = []
 
-    for post in data['posts']['data']:
+    # Loop through raw posts
+    for post in data:
         # Ignore non-photo posts since they're not reviews
         if post['type'] != 'photo':
             continue
@@ -81,22 +96,22 @@ def scraper(environ, start_response):
 
         posts.append(post_data)
 
-    data_list = []
-    data_list.append('{\n    "posts": [\n')
-    for post in posts:
-        data_list.append(' ' * 8 + json.dumps(post) + ',\n')
-    current_time = datetime.datetime.utcnow()
-    runtime = current_time - start_time
-    current_time_iso = current_time.isoformat()
-    data_list.append('    ],\n    "page_id": "' + page_id + \
-        '",\n    "updated": "' + current_time_iso + \
-        '",\n    "runtime": "' + str(runtime) + '"\n}')
-
-    data = ''.join(data_list).encode('utf_8')
+    # Store end time and runtime
+    end_time = datetime.datetime.utcnow()
+    runtime = end_time - start_time
+    # Create output JSON
+    json_dict = {
+        'posts': posts,
+        'length': len(posts),
+        'page_id': page_id,
+        'updated': end_time.isoformat(),
+        'runtime': str(runtime)
+    }
+    json_bstr = json.dumps(json_dict, indent=4).encode('utf_8')
     
     response_headers = [
         ('Content-Type', 'application/json; charset=UTF-8'),
-        ('Content-Length', str(len(data)))
+        ('Content-Length', str(len(json_bstr)))
     ]
     start_response('200 OK', response_headers)
-    return [data]
+    yield json_bstr
