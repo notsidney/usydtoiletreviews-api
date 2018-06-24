@@ -114,4 +114,5 @@ def scraper(environ, start_response):
         ('Content-Length', str(len(json_bstr)))
     ]
     start_response('200 OK', response_headers)
+
     yield json_bstr
