@@ -114,7 +114,8 @@ def scraper(environ, start_response):
         ('Content-Type', 'application/json; charset=UTF-8'),
         ('Content-Length', str(len(json_bstr))),
         ('Cache-Control', 'public, max-age:86400'),
-        ('ETag', hashlib.md5(str(posts).encode('utf_8')).hexdigest())
+        ('ETag', hashlib.md5(str(posts).encode('utf_8')).hexdigest()),
+        ('Access-Control-Allow-Origin', '*')
     ]
     start_response('200 OK', response_headers)
 
