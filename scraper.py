@@ -15,6 +15,8 @@ def get_json(url, output_list):
     return True
 
 def scraper(environ, start_response):
+    for key in environ.keys():
+        print(key, ': ', environ[key])
     # Store start time
     start_time = datetime.datetime.utcnow()
 
@@ -97,6 +99,14 @@ def scraper(environ, start_response):
 
         posts.append(post_data)
 
+    # Create MD5 hash
+    etag_hash = hashlib.md5(str(posts).encode('utf_8')).hexdigest()
+
+    if 'HTTP_IF_NONE_MATCH' in environ:
+        if environ['HTTP_IF_NONE_MATCH'] == etag_hash:
+            start_response('304 Not Modified', [])
+            return
+
     # Store end time and runtime
     end_time = datetime.datetime.utcnow()
     runtime = end_time - start_time
@@ -114,7 +124,7 @@ def scraper(environ, start_response):
         ('Content-Type', 'application/json; charset=UTF-8'),
         ('Content-Length', str(len(json_bstr))),
         ('Cache-Control', 'public, max-age:86400'),
-        ('ETag', hashlib.md5(str(posts).encode('utf_8')).hexdigest()),
+        ('ETag', etag_hash),
         ('Access-Control-Allow-Origin', '*')
     ]
     start_response('200 OK', response_headers)
