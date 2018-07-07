@@ -15,8 +15,6 @@ def get_json(url, output_list):
     return True
 
 def scraper(environ, start_response):
-    for key in environ.keys():
-        print(key, ': ', environ[key])
     # Store start time
     start_time = datetime.datetime.utcnow()
 
