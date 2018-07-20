@@ -1,3 +1,4 @@
+import os
 import requests
 import datetime
 import pytz
@@ -19,8 +20,7 @@ def scraper(environ, start_response):
     start_time = datetime.datetime.utcnow()
 
     # Get access token
-    with open('access_token.txt', 'r') as token_file:
-        access_token = token_file.readline().strip()
+    access_token = os.environ['FB_ACCESS_TOKEN']
     # Store raw post data here
     data = []
     # Request

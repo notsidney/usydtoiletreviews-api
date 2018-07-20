@@ -1,0 +1,6 @@
+Never-expiring access token:
+https://medium.com/@Jenananthan/how-to-create-non-expiry-facebook-page-token-6505c642d0b1
+
+The access token is stored in an environment variable.
+To set it temporarily: $ export FB_ACCESS_TOKEN=<access_token>
+To set it on Heroku:   $ heroku config:set FB_ACCESS_TOKEN=<access_token>
