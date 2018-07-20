@@ -1,1 +1,1 @@
-web: gunicorn --preload --max-requests 1200 scraper:scraper
+web: gunicorn --preload --max-requests 1200 usydtoiletreviews_api:serve_api

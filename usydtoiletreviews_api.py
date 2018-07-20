@@ -15,7 +15,7 @@ def get_json(url, output_list):
         return get_json(data['paging']['next'], output_list)
     return True
 
-def scraper(environ, start_response):
+def serve_api(environ, start_response):
     # Store start time
     start_time = datetime.datetime.utcnow()
 
